@@ -1,0 +1,410 @@
+This is my Python project:
+
+`README.md`:
+
+# `retrieve-sentence-embeddings`
+
+A simple function to retrieve sentence embeddings from
+an [OpenAI Embeddings](https://platform.openai.com/docs/guides/embeddings)-compatible API. That includes:
+
+- [OpenAI's embedding models](https://platform.openai.com/docs/api-reference/embeddings) (`base_url='https://api.openai.com/v1`)
+- [Google Gemini](https://ai.google.dev/gemini-api/docs/openai#embeddings) (`base_url='https://generativelanguage.googleapis.com/v1beta/openai'`)
+- [ollama](https://github.com/ollama/ollama/blob/main/docs/openai.md#v1embeddings) (`base_url='http://localhost:11434/v1'`).
+
+with compatible models.
+
+## Features
+
+- **Compatibility:** Unlike [openai](https://github.com/openai/openai-python), works on Python 2+ with zero non-Python
+  dependencies.
+
+## Installation
+
+```bash
+pip install retrieve-sentence-embeddings
+```
+
+## Usage
+
+```python
+# coding=utf-8
+from retrieve_sentence_embeddings import retrieve_sentence_embeddings
+
+api_key = u'OPENAI_API_KEY'
+base_url = u'https://api.openai.com/v1'
+model = u'text-embedding-ada-002'
+sentences = [
+    u'Hello, world!',
+    u'This is a test sentence.',
+    u'Embeddings are useful!'
+]
+
+sentence_embeddings = retrieve_sentence_embeddings(api_key, base_url, model, sentences)
+```
+
+`sentence_embeddings` is a `List[List[float]]`, e.g.,
+
+```
+[
+    [0.123, -0.982, ...],
+    [0.222, 0.088, ...],
+    ...
+]
+```
+
+## Error Handling
+
+If a network error or malformed response is encountered, the exception is propagated.
+
+## Contributing
+
+Contributions are welcome! Please submit pull requests or open issues on the GitHub repository.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+`pyproject.toml`:
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "retrieve-sentence-embeddings"
+version = "0.1.0a0"
+description = "A simple function to retrieve sentence embeddings from an OpenAI Embeddings-compatible API."
+readme = "README.md"
+requires-python = ">=2"
+license = "MIT"
+authors = [
+  { name="Jifeng Wu", email="jifengwu2k@gmail.com" }
+]
+classifiers = [
+    "Programming Language :: Python :: 2",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "typing; python_version < '3.5'"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/jifengwu2k/retrieve-sentence-embeddings"
+"Bug Tracker" = "https://github.com/jifengwu2k/retrieve-sentence-embeddings/issues"
+`requirements.txt`:
+
+typing; python_version < '3.5'
+`retrieve_sentence_embeddings.py`:
+
+# coding=utf-8
+# Copyright (c) 2025 Jifeng Wu
+# Licensed under the MIT License. See LICENSE file in the project root for full license information.
+import sys
+from json import load, dumps
+
+from typing import List, Text
+
+# urllib differences
+if sys.version_info < (3,):
+    from urllib2 import Request, urlopen
+
+
+    def post_request_instance(url, data, headers):
+        """Create POST request for Python 2.
+
+        Args:
+            url: The target URL for the request
+            data: The data to be sent in the request body
+            headers: Dictionary of HTTP headers
+
+        Returns:
+            Request: A configured POST request object
+        """
+        return Request(url, data=data, headers=headers)
+else:
+    from urllib.request import Request, urlopen
+
+
+    def post_request_instance(url, data, headers):
+        """Create POST request for Python 3.
+
+        Args:
+            url: The target URL for the request
+            data: The data to be sent in the request body
+            headers: Dictionary of HTTP headers
+
+        Returns:
+            Request: A configured POST request object
+        """
+        return Request(url, data=data, headers=headers, method=u'POST')
+
+
+def retrieve_sentence_embeddings(
+        api_key,  # type: Text
+        base_url,  # type: Text
+        model,  # type: Text
+        sentences,  # type: List[Text]
+):
+    # type: (...) -> List[List[float]]
+    url = u'%s/embeddings' % base_url
+    headers = {
+        u'Content-Type': u'application/json',
+        u'Authorization': u'Bearer %s' % api_key
+    }
+    data = dumps({u'input': sentences, u'model': model}).encode('utf-8')
+    req = post_request_instance(url, data=data, headers=headers)
+    response = urlopen(req)
+    response_json = load(response)
+    return [
+        data_object['embedding']
+        for data_object in response_json['data']
+    ]
+
+`setup.cfg`:
+
+[bdist_wheel]
+universal = 1
+`LICENSE`:
+
+MIT License
+
+Copyright (c) 2025 Jifeng Wu
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Please do a code review and assess whether the code complies with these guidelines:
+
+Guidelines
+General Principles
+One file = one module = one purpose: Each file must be explicitly importable as a module and serve exactly one main purpose.
+Portability to C++: Code must be directly portable to C++ (avoid dynamic, Python-specific idioms).
+Python Version Policy
+All code must run and be tested on both Python 2 and Python 3.
+Version-conditional logic: Only use sys.version_info for version checks. Do not use except ImportError, sys.version, or similar.
+String Types
+Encoding/decoding UTF-8, URI, stdin/out, file names etc. can use our textcompat package.
+Only use the legacy % formatting syntax. No .format() or f-strings.
+Input Handling
+For interactive input, use our unicode-raw-input package.
+Use open(...) for binary files; codecs.open(...) for Unicode text files.
+Print
+Use from __future__ import print_function if using print().
+Typing
+All APIs fully typed with type comments only (# type: ...)
+No inline type annotations, no AnnAssign.
+Use only typing features as in Python 3.5 / PEP 484.
+Absolutely no dependent typing. The return type of a function must not vary with different parameter types and/or values.
+No use of @overload permitted.
+Classes
+No attrs, dataclasses, or namedtuple.
+All classes must have:
+Declared __slots__
+Explicit object base class
+Use six.with_metaclass(meta, *bases) for metaclasses
+Mutable: __init__; Immutable: __new__
+Enums
+Only manual/explicit values; do not use auto() even with enum34.
+Restricted Language Features
+Never use: async, await, yield from, walrus (:=), structural pattern matching (match/case).
+Platform Policy
+All code must run and be tested on both NT and POSIX.
+Determine platform with posix-or-nt (returns 'nt' or 'posix').
+Never use the os, os.path, subprocess, or platform modules. Overly complicated and convoluted codebases, and large parts are not available or behave differently on NT, Android, and iOS, etc.
+Path manipulations: Conditionally import ntpath or posixpath as needed.
+Process launching: Use our ctypes-unicode-proclaunch.
+Env vars: Use our read-unicode-environment-variables-dictionary.
+Use sys.platform if you absolutely need an OS name.
+System API Access
+The threading and multiprocessing modules are not allowed.
+Direct system calls via ctypes are strictly limited as follows:
+On NT:
+Only functions in MSVCRT (Microsoft C Runtime) and the standard Win32 API may be called.
+On POSIX:
+Only standardized POSIX functions (from libc or standard headers) may be called.
+Should be factored as a standalone, well-tested PyPI package similar to our other infra tools.
+If code needs capabilities beyond these, use PyQt/PySide and the Qt API as your system abstraction layer.
+Examples: advanced file I/O, process control, IPC, networking, device enumeration, drag-and-drop, clipboard, graphics, etc.
+Use our detect-qt-binding to automatically detect which Qt binding is available in your environment.
+File and Folder Structure
+Import all files (modules) via absolute import. No relative import, no sys.path manipulation.
+All files (modules) must only have public functions and classes - no private/internal APIs.
+All directories must include an explicit __init__.py within them.
+Utility Code: No "utils.py" - Publish Generalized Tools
+No local "utils.py" files: Do not keep grab-bag or miscellaneous utility functions/classes in a project-private utils.py file.
+General-purpose tools must be published as standalone packages to PyPI, each focusing on one well-defined function, class, or concept.
+Move helpers that would otherwise go into "utils.py" into their own properly documented, versioned packages.
+These utility packages should be:
+Named after their actual purpose;
+Well-tested and actively maintained;
+Equipped with a README, proper docstrings, testable usage examples, semantic versioning, and a clear license.
+All projects share utilities via explicit dependencies rather than duplicating or copying helpers.
+When a utility is improved or a bug is fixed, updating the package ensures all dependent projects benefit automatically - "write once, run everywhere."
+This approach avoids hidden technical debt and promotes code quality, documentation, reuse, and maintainability across your entire codebase.
+It also contributes to the wider Python ecosystem.
+Regular Expressions
+Regular expressions only for simple parsing.
+Use Unix-style/basic regex features:
+.: any single character
+[ ]: character set/class
+[^ ]: negated class
+^, $: line start/end
+( ): grouping/subexpression
+*: zero or more
+For complicated input:
+Use a context-free grammar parser (e.g. Lark), hand-written parser, or an LLM.
+Argument Parsing
+Use argparse.
+Use ambiguous str for all argument values (default API behavior).
+All arguments should have a help=... string.
+Flag Arguments
+Presence only: action='store_true' -> bool
+Counted: action='count' -> int
+Single value: type=str, required=True/False, explicit default=...
+Multiple occurrences: action='append' -> Optional[List[str]]
+Positional Arguments
+Exactly one: simple positional
+0/1 (optional): nargs='?', must be last positional argument
+0 or more/1 or more: nargs='*'/nargs='+', with plural argument name and singular metavar, must be last positional argument
+Testing & Documentation
+Tests must:
+Run successfully on both Python 2 and 3, POSIX and NT.
+Be suitable for inclusion in README.md under "Usage" or "Quickstart".
+Simultaneously serve as usage documentation (idiomatic examples).
+Self-contained and runnable as a script or documentation block.
+Python Packaging & Distribution
+File Layout
+All files start with a copyright and license block:
+Boilerplate: # Copyright (c) 2025 Jifeng Wu\n# Licensed under the <license> License. See LICENSE file in the project root for full license information.
+simple infrastructure: MIT/BSD
+complex infra: Apache-2.0
+applications: AGPL-3.0
+Required Files & Metadata
+README.md with standard boilerplate (see below)
+LICENSE
+requirements.txt (see example)
+pyproject.toml (see template)
+setup.cfg (see template)
+README.md Boilerplate
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+<Project Description>
+
+## Installation
+
+...
+
+## Usage
+
+...
+
+## Contributing
+
+Contributions are welcome! Please submit pull requests or open issues on the GitHub repository.
+
+## License
+
+This project is licensed under the [<license> License](LICENSE).
+Example requirements.txt
+1
+2
+3
+4
+enum34; python_version < '3.4'
+pyreadline
+six
+typing; python_version < '3.5'
+pyproject.toml Template
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "<project-name>"
+version = "<version>"
+description = "<Project Description>"
+readme = "README.md"
+requires-python = ">=2"
+license = "<license>"
+authors = [
+  { name="Jifeng Wu", email="jifengwu2k@gmail.com" }
+]
+classifiers = [
+    "Programming Language :: Python :: 2",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "<requirements.txt line 1>",
+    "<requirements.txt line 2>",
+    "<requirements.txt line 3>"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/jifengwu2k/<project-name>"
+"Bug Tracker" = "https://github.com/jifengwu2k/<project-name>/issues"
+Replace <project-name>, <version>, <license>, and requirements as appropriate.
+
+setup.cfg Template
+1
+2
+[bdist_wheel]
+universal = 1
